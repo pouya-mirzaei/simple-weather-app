@@ -7,5 +7,31 @@
         <link rel="stylesheet" href="css/styles.css" />
         <script src="js/app.js" defer></script>
     </head>
-    <body></body>
+    <body>
+        <div class="app-wrap">
+            <header>
+                <div class="search-container">
+                    <input
+                        type="text"
+                        autocomplete="off"
+                        class="search-box"
+                        placeholder="Search for a city..."
+                    />
+
+                    <ul class="search-result"></ul>
+                </div>
+            </header>
+            <main>
+                <section class="location">
+                    <div class="city">London, GB</div>
+                    <div class="date">Saturday 22 July 2023</div>
+                </section>
+                <div class="current">
+                    <div class="temp">16.4°C</div>
+                    <div class="weather">Rain: Slight, moderate and heavy intensity</div>
+                    <div class="hi-low">13.4°C / 18.6°C</div>
+                </div>
+            </main>
+        </div>
+    </body>
 </html>
