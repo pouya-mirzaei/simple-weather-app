@@ -1,4 +1,3 @@
-//  VARIABLES
 const weatherCodes = [
   { code: 0, description: 'Clear sky' },
   { code: 1, description: 'Mainly clear, partly cloudy, and overcast' },
@@ -50,28 +49,68 @@ const currentTemp = document.querySelector('.temp');
 const weather = document.querySelector('.weather');
 // const searchInput = document.querySelector('.search-box');
 const startBtn = document.getElementById('btn');
+const loader = document.querySelector('.app-loader');
 const searchResult = document.querySelector('.search-result');
 const cityOutput = document.querySelector('.city');
 const dateOutput = document.querySelector('.date');
 
 let weatherApi = `https://api.open-meteo.com/v1/forecast?latitude=51.5072&longitude=0.1276&howeatherApiy=temperature_2m&daily=weathercode,temperature_2m_max,temperature_2m_min&current_weather=true&timezone=auto&forecast_days=1`;
+// let cityNameApi = `https://api.api-ninjas.com/v1/geocoding?city=${cityName}`;
 
-//  EVENT LISTENERS
+// event listeners
 
-searchInput.addEventListener('input', search);
-searchInput.addEventListener('blur', () => {
-  setTimeout(() => {
-    disableSearchResult();
-  }, 500);
+startBtn.addEventListener('click', () => {
+  activeLoader();
+  handleGeo();
 });
 
-window.addEventListener('load', () => {
+function activeLoader() {
+  loader.style.display = 'flex';
+}
+function loaderOff() {
+  loader.style.display = 'none';
+}
+
+// handling current user location
+
+async function handleGeo() {
+  navigator.geolocation.getCurrentPosition((pos) => {
+    console.log(pos);
+
+    getCityInfo(pos.coords.latitude, pos.coords.longitude).then((res) => {
+      processCoords(res);
+    });
+  });
+}
+
+async function getCityInfo(lat, lon) {
+  let reverseGeoCode = `https://api.api-ninjas.com/v1/reversegeocoding?lat=${lat}&lon=${lon}`;
+
+  const res = await fetch(reverseGeoCode, {
+    headers: {
+      'X-Api-Key': 'ln6LX2iXbPDWlinal0qWBQ==F3ooB8uo1zi4mn0f',
+    },
+  });
+
+  const data = await res.json();
+  return { ...data[0], lat, lon };
+}
+
+function processCoords(city) {
+  let { lat, lon, name, country } = city;
+
+  // console.log(lat, lon);
+
+  let weatherApi = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&howeatherApiy=temperature_2m&daily=weathercode,temperature_2m_max,temperature_2m_min&current_weather=true&timezone=auto&forecast_days=1`;
+
   getData(weatherApi, parsWeatherData);
-});
 
-// FUNCTIONS :
+  processCityNames(name, country);
+}
 
-// API
+function processCityNames(cityName, country) {
+  cityOutput.innerHTML = `${cityName} , ${country}`;
+}
 
 function getData(apiLink, callback, headers = null) {
   fetch(apiLink, headers)
@@ -82,8 +121,6 @@ function getData(apiLink, callback, headers = null) {
     })
     .catch((err) => console.log(err));
 }
-
-// WEATHER DATA
 
 function parsWeatherData(data) {
   const unit = data.daily_units.temperature_2m_min;
@@ -96,6 +133,8 @@ function parsWeatherData(data) {
   processCurrentTemp(currentTemp, unit);
   processHighLowTemp(maxTemp, minTemp, unit);
   processWeatherCode(data.current_weather.weathercode);
+  loaderOff();
+  document.querySelector('main').style.display = 'flex';
 }
 
 function processHighLowTemp(high, low, unit) {
@@ -121,142 +160,3 @@ function processDate(date) {
 
   dateOutput.textContent = `${day} ${dateNumber} ${month} ${year}`;
 }
-
-function processCityNames(cityName, country) {
-  cityOutput.innerHTML = `${cityName} , ${country}`;
-}
-
-// SEARCHING PROCESS
-
-function search() {
-  if (!searchInput.value) {
-    disableSearchResult();
-    return;
-  }
-
-  let cityName = searchInput.value;
-  setTimeout(() => {
-    // checking for if users is still typing
-    if (cityName !== searchInput.value) {
-      return;
-    }
-
-    let cityNameApi = `https://api.api-ninjas.com/v1/geocoding?city=${cityName}`;
-
-    let headers = {
-      headers: {
-        'X-Api-Key': 'ln6LX2iXbPDWlinal0qWBQ==F3ooB8uo1zi4mn0f',
-      },
-    };
-
-    // console.log("stopped");
-
-    getData(cityNameApi, parseCityNames, headers);
-  }, 100);
-}
-
-function parseCityNames(cities) {
-  clearSearchBox();
-  if (!cities[0]) {
-    showSearchResult();
-    let liError = document.createElement('li');
-    liError.textContent = 'City not found , try again ...';
-    liError.classList.add('not-found');
-
-    searchResult.append(liError);
-
-    return;
-  }
-
-  showSearchResult();
-  cities.forEach((city) => {
-    console.log(city);
-
-    let newCity = document.createElement('li');
-    if (city.state) {
-      newCity.textContent = `${city.name}, ${city.state}, ${city.country}`;
-    } else {
-      newCity.textContent = `${city.name}, ${city.country}`;
-    }
-
-    newCity.addEventListener('click', () => {
-      processCoords(city);
-    });
-
-    searchResult.append(newCity);
-  });
-}
-
-function showSearchResult() {
-  searchResult.classList.add('visible');
-}
-function disableSearchResult() {
-  searchResult.classList.remove('visible');
-  searchInput.value = '';
-  clearSearchBox();
-}
-
-function clearSearchBox() {
-  searchResult.innerHTML = '';
-}
-
-function processCoords(city) {
-  let lat = city.latitude;
-  let log = city.longitude;
-
-  console.log(lat, log);
-
-  let cityName = city.name;
-  let country = city.country;
-  console.log(lat);
-  let weatherApi = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${log}&howeatherApiy=temperature_2m&daily=weathercode,temperature_2m_max,temperature_2m_min&current_weather=true&timezone=auto&forecast_days=1`;
-
-  getData(weatherApi, parsWeatherData);
-
-  processCityNames(cityName, country);
-
-  disableSearchResult();
-}
-
-// get lat , long
-
-// cities =>
-//   latitude
-//   longitude
-//   name
-//   country
-
-console.log('hello');
-
-document.body.addEventListener('click', () => {
-  console.log('clicked');
-
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      console.log(pos);
-      const div = document.querySelector('.test');
-      console.log(div);
-
-      div.textContent += pos.coords.latitude + '\n ' + pos.coords.longitude;
-
-      fetch('https://f143-91-107-142-89.ngrok-free.app/location', {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({ lat: pos.coords.latitude, long: pos.coords.longitude }),
-      })
-        .then((res) => res.json())
-        .then((res) => console.log(res))
-        .catch((err) => {
-          div.textContent += 'erorrrrr';
-        });
-    },
-    (err) => {
-      const div = document.querySelector('.test');
-      console.log(div);
-
-      div.textContent = 'error';
-    }
-  );
-});
